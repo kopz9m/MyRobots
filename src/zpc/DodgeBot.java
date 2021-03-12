@@ -8,7 +8,6 @@ public class DodgeBot extends AdvancedRobot {
 	double previousEnergy = 100;
 	int movementDirection = 1;
 	int gunDirection = 1;
-	ArrayList<String> enemies = new ArrayList<>();
 	public void run() {
 		setTurnGunRight(99999);
 	}
@@ -31,7 +30,7 @@ public class DodgeBot extends AdvancedRobot {
 		setTurnGunRight(99999 * gunDirection);
 
 		// Fire directly at target
-		fire(1);
+		fire(e.getDistance()/1000*3);
 
 		// Track the energy level
 		previousEnergy = e.getEnergy();
