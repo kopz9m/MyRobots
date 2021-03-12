@@ -3,6 +3,7 @@ package zpc;
 import java.awt.Color;
 import java.util.HashMap;
 import robocode.AdvancedRobot;
+import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.HitWallEvent;
 import robocode.RobotDeathEvent;
@@ -14,48 +15,51 @@ public class BatMobile extends AdvancedRobot {
 	// Map<String,GravPoint> gravPoints = new HashMap<>();
 	HashMap<String, GravPoint> gravPoints = new HashMap<String, GravPoint>();
 	int enemyNumber = 1;
+	double hitRate = 0;
+	int fireCount = 1;
+	int hitCount = 0;
+	String onlyName = null;
 
 	@Override
 	public void run() {
-
-		enemyNumber = getOthers();
-
 		setAllColors(Color.black);
+		enemyNumber = getOthers();
 		turnRight(360);
-
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 		setAdjustRadarForRobotTurn(true);
 		while (true) {
-			System.out.println("-----------------------------------------------------------");
+			// System.out.println("start-----------------------------------------------------------");
 			enemyNumber = getOthers();
-			if (enemyNumber > 1) {
-				antiGravityMove();
-				execute();
-			} else {
 
+			antiGravityMove();
+
+			if (enemyNumber == 1) {
+				//doFire();
+				setFire(2);
 			}
+
+			execute();
 
 		}
 	}
 
 	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
-		// ”½d—Íìí
+		System.out.println("enemy found!!!");
+
 		double absBearing = e.getBearingRadians() + getHeadingRadians();
+		GravPoint g = new GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
+				getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
+				gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy(),
+				e.getDistance(), e.getBearingRadians());
+		gravPoints.put(e.getName(), g);
 
-		if (enemyNumber > 1) {
-			GravPoint g = new GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
-					getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
-					gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy());
-			gravPoints.put(e.getName(), g);
+		// 1vs1
+		if (gravPoints.size() == 1) {
+			onlyName = e.getName();
 
 		}
-		// dodge bullet and
-		else {
-
-		}
-
 	}
 
 	@Override
@@ -65,18 +69,31 @@ public class BatMobile extends AdvancedRobot {
 	}
 
 	@Override
-	public void onHitWall(HitWallEvent event) {
+	public void onBulletHit(BulletHitEvent event) {
 		// TODO Auto-generated method stub
-		// super.onHitWall(event);
-		System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-
+		super.onBulletHit(event);
+		hitCount++;
 	}
 
 	@Override
 	public void onHitRobot(HitRobotEvent event) {
 		// TODO Auto-generated method stub
-		super.onHitRobot(event);
-		setBack(5);
+		// super.onHitRobot(event);
+		setTurnLeft(180);
+	}
+
+	void doFire() {
+		if (gravPoints.size() == 1) {
+			GravPoint p = gravPoints.get(onlyName);
+			hitRate = hitCount / fireCount;
+			double absBearing =  getHeadingRadians() + p.bearingRadians;
+			setTurnGunRightRadians(normalAngle_from0to2PI(absBearing - getGunHeadingRadians()));
+			out.println("fire: " + p.distance / 1000 * 3 * hitRate);
+			out.println("bearingRadians: "  + p.bearingRadians);
+
+			//setFire(1);
+			fireCount++;
+		}
 	}
 
 	void antiGravityMove() {
@@ -86,7 +103,6 @@ public class BatMobile extends AdvancedRobot {
 		double ang;
 		GravPoint p;
 		for (String name : gravPoints.keySet()) {
-
 			p = (GravPoint) gravPoints.get(name);
 			// Calculate the total force from this point on us
 			force = p.power / Math.pow(getRange(getX(), getY(), p.x, p.y), 2);
@@ -100,59 +116,26 @@ public class BatMobile extends AdvancedRobot {
 			System.out.println("name: " + name);
 			System.out.println("power: " + p.power);
 			System.out.println("before power: " + p.powerBefore);
-
 		}
 
-		/**
-		 * The following four lines add wall avoidance. They will only affect us if the
-		 * bot is close to the walls due to the force from the walls decreasing at a
-		 * power 3.
-		 **/
-
-		// ‰E•Ç
+		// •Ç‚ð”ð‚¯‚é
 		xforce -= 5000 / Math.pow(getRange(getX(), getY(), getBattleFieldWidth(), getY()), 3);
-		// ¶•Ç
 		xforce += 5000 / Math.pow(getRange(getX(), getY(), 0, getY()), 3);
-		// ã•Ç
 		yforce -= 5000 / Math.pow(getRange(getX(), getY(), getX(), getBattleFieldHeight()), 3);
-		// ‰º•Ç
 		yforce += 5000 / Math.pow(getRange(getX(), getY(), getX(), 0), 3);
-
-		// Move in the direction of our resolved force.
 
 		double forceAngleToUpDirection = normalAngle_from0to2PI(PI / 2 - Math.atan2(yforce, xforce));
 		double turnAngle = forceAngleToUpDirection - getHeadingRadians();
-		// double kaku = getHeadingRadians() + Math.atan2(yforce, xforce) - PI / 2;
-		// turnAngle = normalAngle(turnAngle);
-
-		System.out.println("getHeading " + getHeading());
-
-		System.out.println("force anngle = " + Math.toDegrees(PI / 2 - Math.atan2(yforce, xforce)));
-		System.out.println("turnAngle = " + Math.toDegrees(turnAngle));
-
-		/*
-		 * if (turnAngle > PI / 2) { turnAngle -= PI; dir = -1; } else if (turnAngle <
-		 * -PI / 2) { turnAngle += PI; dir = -1; } else { dir = 1; }
-		 */
 
 		turnAngle = normalAngle(turnAngle);
-		System.out.println("turnAngle after normal = " + Math.toDegrees(turnAngle));
 
-		/*
-		 * if (turnAngle > PI) { turnAngle -= 2 * PI; } else if (turnAngle <= -PI) {
-		 * turnAngle += 2 * PI;
-		 * 
-		 * }
-		 */
 		double allForce = Math.sqrt(Math.pow(xforce, 2) + Math.pow(yforce, 2));
 
 		setTurnRightRadians(turnAngle);
-		setAhead(0.1 / allForce);
+		setAhead(10 / (allForce * enemyNumber));
+		System.out.println("all Force = " + allForce);
 
 		setTurnRadarRight(Double.POSITIVE_INFINITY);
-
-		// System.out.println("turn right = " + kaku);
-		// System.out.println("go ahead = " + 20 * dir);
 
 	}
 
@@ -185,13 +168,16 @@ public class BatMobile extends AdvancedRobot {
 	}
 
 	class GravPoint {
-		public double x, y, power, powerBefore;
+		public double x, y, power, powerBefore, distance, bearingRadians;
 
-		public GravPoint(double pX, double pY, double pPower, double pPowerBefore) {
+		public GravPoint(double pX, double pY, double pPower, double pPowerBefore, double pDistance,
+				double pBearingRadians) {
 			x = pX;
 			y = pY;
 			power = pPower;
 			powerBefore = pPowerBefore;
+			distance = pDistance;
+			bearingRadians = pBearingRadians;
 		}
 	}
 

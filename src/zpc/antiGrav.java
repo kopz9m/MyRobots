@@ -1,5 +1,6 @@
 package zpc;
 
+import java.awt.Color;
 import java.util.HashMap;
 import robocode.AdvancedRobot;
 import robocode.HitRobotEvent;
@@ -18,6 +19,7 @@ public class antiGrav extends AdvancedRobot {
 	public void run() {
 
 		enemyNumber = getOthers();
+		setAllColors(Color.WHITE);
 
 		turnRight(360);
 
@@ -25,14 +27,9 @@ public class antiGrav extends AdvancedRobot {
 		setAdjustRadarForGunTurn(true);
 		setAdjustRadarForRobotTurn(true);
 		while (true) {
-			System.out.println("-----------------------------------------------------------");
 			enemyNumber = getOthers();
-			if (enemyNumber > 1) {
-				antiGravityMove();
-				execute();
-			} else {
-
-			}
+			antiGravityMove();
+			execute();
 
 		}
 	}
@@ -41,18 +38,10 @@ public class antiGrav extends AdvancedRobot {
 	public void onScannedRobot(ScannedRobotEvent e) {
 		// ”½d—Íìí
 		double absBearing = e.getBearingRadians() + getHeadingRadians();
-
-		if (enemyNumber > 1) {
-			GravPoint g = new GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
-					getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
-					gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy());
-			gravPoints.put(e.getName(), g);
-
-		}
-		// dodge bullet and
-		else {
-
-		}
+		GravPoint g = new GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
+				getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
+				gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy());
+		gravPoints.put(e.getName(), g);
 
 	}
 
@@ -146,17 +135,17 @@ public class antiGrav extends AdvancedRobot {
 
 		if (turnAngle < -PI / 2) {
 			setTurnRightRadians(PI + turnAngle);
-			setBack(0.5 / allForce);
+			setBack(2 / allForce);
 			System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
 		} else if (turnAngle > PI / 2) {
 			setTurnRightRadians(turnAngle - PI);
-			setBack(0.5 / allForce);
+			setBack(2 / allForce);
 			System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 
 		} else {
 			setTurnRightRadians(turnAngle);
-			setAhead(0.5 / allForce);
+			setAhead(2 / allForce);
 		}
 
 		setTurnRadarRight(Double.POSITIVE_INFINITY);
