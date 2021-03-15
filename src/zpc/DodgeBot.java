@@ -9,7 +9,7 @@ public class DodgeBot extends AdvancedRobot {
 	int movementDirection = 1;
 	int gunDirection = 1;
 	public void run() {
-		setTurnGunRight(99999);
+		setTurnGunRight(360);
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
