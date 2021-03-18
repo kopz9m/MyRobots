@@ -26,7 +26,8 @@ public class Test extends Robot {
 		double y = 0;
 		double ang = normalAngle(Math.PI / 2 - Math.atan2(-100, 0.1));
 		//System.out.println("ang: " + Math.toDegrees(ang));
-		System.out.println("ang: " + Math.sin(Math.toRadians(15))/PI);
+		double xx = -45%40;
+		System.out.println("ang: "+ xx);
 
 
 	}

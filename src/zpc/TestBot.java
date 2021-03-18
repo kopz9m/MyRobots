@@ -18,11 +18,9 @@ import java.awt.Color;
  * 敵ロボットを管理するクラス
  */
 
-
 /*
  * 敵の進路を線形予測
  */
-
 
 /*
  * 共通処理ライブラリ
@@ -36,13 +34,18 @@ public class TestBot extends AdvancedRobot {
 	 * run: GuP's default behavior
 	 */
 
-
 	public void run() {
 
-	while (true){
-		setBack(10);
-		setTurnRight(100);
-		execute();
+		while (true) {
+			setBack(10);
+			setTurnRight(100);
+			execute();
+		}
 	}
-	}
+	
+	
+
+	
+	
+	
 }

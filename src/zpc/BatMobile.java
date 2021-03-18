@@ -24,7 +24,6 @@ public class BatMobile extends AdvancedRobot {
 	double hitCount = 0;
 	double lastFireTime = 0;
 	String onlyName = null;
-	// int gravityDirection = 1;
 
 	@Override
 	public void run() {
@@ -53,9 +52,7 @@ public class BatMobile extends AdvancedRobot {
 
 	@Override
 	public void onScannedRobot(ScannedRobotEvent e) {
-		System.out.println("enemy found!!!");
 		double absBearing = e.getBearingRadians() + getHeadingRadians();
-
 		Z_GravPoint g = new Z_GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
 				getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
 				gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy(),
@@ -64,9 +61,7 @@ public class BatMobile extends AdvancedRobot {
 
 		// sweep
 		if (enemyNumber == 1) {
-
 			onlyName = e.getName();
-
 		}
 	}
 
@@ -78,42 +73,25 @@ public class BatMobile extends AdvancedRobot {
 		}
 	}
 
-	@Override
-	public void onBulletHit(BulletHitEvent event) {
-		// TODO Auto-generated method stub
-		super.onBulletHit(event);
-		hitCount++;
-	}
-
-	@Override
-	public void onHitRobot(HitRobotEvent event) {
-		// TODO Auto-generated method stub
-		// super.onHitRobot(event);
-		setTurnLeft(180);
-	}
-
 	void doFire() {
 		Z_GravPoint p;
 		if (gravPoints.size() < 2 && gravPoints.containsKey(onlyName)) {
 			p = gravPoints.get(onlyName);
-			out.println("11__distance: " + p.distance);
 			double extraTurn = 0;
 			if (getTime() - lastFireTime > 5) {
-			//if (p.distance < 100) {
+				// if (p.distance < 100) {
 
 				double absBearing = getHeadingRadians() + p.bearingRadians;
 				double gunTurn = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians());
-				// gunTurn += extraTurn;
-				if ((getGunHeadingRadians() - Utils.normalAbsoluteAngle(absBearing)) > 0) {
-					//extraTurn = -Math.atan(36.0/p.distance);
+				/*
+				 * if ((getGunHeadingRadians() - Utils.normalAbsoluteAngle(absBearing)) > 0) {
+				 * extraTurn = -Math.atan(36.0/p.distance);
+				 * 
+				 * } else { extraTurn = Math.atan(36.0/p.distance); } gunTurn += extraTurn;
+				 */
 
-				} else{
-					//extraTurn = Math.atan(36.0/p.distance);
-				};
-				
 				setTurnGunRightRadians(gunTurn + extraTurn);
-
-				setFire(1000 / p.distance);
+				setFire(800 / p.distance);
 				lastFireTime = getTime();
 			}
 		} else {
@@ -121,10 +99,10 @@ public class BatMobile extends AdvancedRobot {
 				p = (Z_GravPoint) gravPoints.get(name);
 				double absBearing = getHeadingRadians() + p.bearingRadians;
 				double gunTurn = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians());
-				// double extraTurn = ;
-				// gunTurn += extraTurn;
+
 				setTurnGunRightRadians(gunTurn);
-				if (getTime() - lastFireTime > 10 && Math.abs(p.velocity) == 0 && p.distance < 200) {
+				if (// getTime() - lastFireTime > 50 &&
+				Math.abs(p.velocity) < 0.1 && p.distance < 100) {
 
 					setFire(100 / p.distance);
 					lastFireTime = getTime();
@@ -136,14 +114,6 @@ public class BatMobile extends AdvancedRobot {
 
 	void doFullScan() {
 		setTurnRadarRight(999);
-	}
-	
-
-	@Override
-	public void onBulletMissed(BulletMissedEvent event) {
-		// TODO Auto-generated method stub
-		// super.onBulletMissed(event);
-		// out.println("bullet: " + event.getBullet());
 	}
 
 	void doSweepScan() {

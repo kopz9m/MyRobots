@@ -2,8 +2,10 @@ package zpc;
 
 import java.awt.Color;
 import java.util.HashMap;
+
 import robocode.AdvancedRobot;
 import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
 import robocode.HitRobotEvent;
 import robocode.RobotDeathEvent;
 import robocode.Rules;
@@ -19,9 +21,8 @@ public class antiGrav extends AdvancedRobot {
 	double hitRate = 0;
 	double fireCount = 1;
 	double hitCount = 0;
-	int radarTurnDirection = 1;
+	double lastFireTime = 0;
 	String onlyName = null;
-	String closestName = null;
 
 	@Override
 	public void run() {
@@ -35,14 +36,12 @@ public class antiGrav extends AdvancedRobot {
 		while (true) {
 			// System.out.println("start-----------------------------------------------------------");
 			enemyNumber = getOthers();
-			out.println("enemy number: " + enemyNumber);
-			if (enemyNumber == 1) {
+
+			if (enemyNumber == 1)
 				doSweepScan();
-			} else {
+			else
 				doFullScan();
-			}
-			doFire();
-			fireCount++;
+			//doFire();
 
 			antiGravityMove();
 			execute();
@@ -57,7 +56,7 @@ public class antiGrav extends AdvancedRobot {
 		Z_GravPoint g = new Z_GravPoint(getX() + e.getDistance() * Math.sin(absBearing),
 				getY() + e.getDistance() * Math.cos(absBearing), e.getEnergy(),
 				gravPoints.containsKey(e.getName()) ? gravPoints.get(e.getName()).power : e.getEnergy(),
-				e.getDistance(), e.getBearingRadians());
+				e.getDistance(), e.getBearingRadians(), e.getVelocity());
 		gravPoints.put(e.getName(), g);
 
 		// sweep
@@ -71,8 +70,9 @@ public class antiGrav extends AdvancedRobot {
 	@Override
 	public void onRobotDeath(RobotDeathEvent event) {
 		// super.onRobotDeath(event);
-		gravPoints.remove(event.getName());
-		closestName = null;
+		if (gravPoints.size() > 1 && gravPoints.containsKey(event.getName())) {
+			gravPoints.remove(event.getName());
+		}
 	}
 
 	@Override
@@ -90,50 +90,64 @@ public class antiGrav extends AdvancedRobot {
 	}
 
 	void doFire() {
-		if (gravPoints.size() == 1) {
-			Z_GravPoint p = gravPoints.get(onlyName);
-			hitRate = hitCount / fireCount;
-			double absBearing = getHeadingRadians() + p.bearingRadians;
-			double gunTurn = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians());
-			// double extraTurn = ;
-			// gunTurn += extraTurn;
-			setTurnGunRightRadians(gunTurn);
-			setFire(p.distance / 500 * 3);
+		Z_GravPoint p;
+		if (gravPoints.size() < 2 && gravPoints.containsKey(onlyName)) {
+			if (getTime() - lastFireTime > 3) {
 
-			out.println("fire: " + p.distance / 500 * 3);
-			out.println("hitRate: " + hitRate);
-			// out.println("extraTurn: " + extraTurn);
-
-		} else {
-			if (closestName != null) {
-				Z_GravPoint p = gravPoints.get(closestName);
+				p = gravPoints.get(onlyName);
+				hitRate = hitCount / fireCount;
 				double absBearing = getHeadingRadians() + p.bearingRadians;
 				double gunTurn = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians());
 				// double extraTurn = ;
 				// gunTurn += extraTurn;
 				setTurnGunRightRadians(gunTurn);
-				setFire(1.0);
+				setFire(300 / p.distance);
+				lastFireTime = getTime();
+			}
+		} else {
+			for (String name : gravPoints.keySet()) {
+				p = (Z_GravPoint) gravPoints.get(name);
+				if (getTime() - lastFireTime > 10 && Math.abs(p.velocity) < 0.1 ) {
+					double absBearing = getHeadingRadians() + p.bearingRadians;
+					double gunTurn = Utils.normalRelativeAngle(absBearing - getGunHeadingRadians());
+					// double extraTurn = ;
+					// gunTurn += extraTurn;
+					setTurnGunRightRadians(gunTurn);
+					setFire(300 / p.distance);
+					lastFireTime = getTime();
+				}
+
 			}
 		}
+
 	}
 
 	void doFullScan() {
-		setTurnRadarRight(Double.POSITIVE_INFINITY * radarTurnDirection);
+		setTurnRadarRight(999);
+	}
+
+	@Override
+	public void onBulletMissed(BulletMissedEvent event) {
+		// TODO Auto-generated method stub
+		// super.onBulletMissed(event);
+		out.println("bullet: " + event.getBullet());
 	}
 
 	void doSweepScan() {
-		Z_GravPoint p = gravPoints.get(onlyName);
-		double absBearing = getHeadingRadians() + p.bearingRadians;
-		double radarTurn = Utils.normalRelativeAngle(absBearing - getRadarHeadingRadians());
-		double extraTurn = Math.min(Math.atan(36.0 / p.distance), Rules.RADAR_TURN_RATE_RADIANS);
-		radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
-		setTurnRadarRightRadians(radarTurn);
-		out.println("extraTurn: " + extraTurn);
+		if (gravPoints.containsKey(onlyName)) {
+			Z_GravPoint p = gravPoints.get(onlyName);
+			double absBearing = getHeadingRadians() + p.bearingRadians;
+			double radarTurn = Utils.normalRelativeAngle(absBearing - getRadarHeadingRadians());
+			double extraTurn = Math.min(Math.atan(36.0 / p.distance), Rules.RADAR_TURN_RATE_RADIANS);
+			radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
+			setTurnRadarRightRadians(radarTurn);
+			out.println("extraTurn: " + extraTurn);
+		} else
+			setTurnRadarRight(999);
 
 	}
 
 	void antiGravityMove() {
-		double minDistance = 2000;
 		double xforce = 0;
 		double yforce = 0;
 		double force;
@@ -150,14 +164,6 @@ public class antiGrav extends AdvancedRobot {
 			xforce += Math.sin(ang) * force;
 			yforce += Math.cos(ang) * force;
 
-			if (p.distance < minDistance) {
-				minDistance = p.distance;
-				closestName = name;
-			}
-
-			System.out.println("name: " + name);
-			System.out.println("power: " + p.power);
-			System.out.println("before power: " + p.powerBefore);
 		}
 
 		// •Ç‚ð”ð‚¯‚é
@@ -173,7 +179,6 @@ public class antiGrav extends AdvancedRobot {
 
 		double allForce = Math.sqrt(Math.pow(xforce, 2) + Math.pow(yforce, 2));
 
-		
 		/*
 		 * if (turnAngle < -PI / 2) { setTurnRightRadians(PI + turnAngle); setBack(2 /
 		 * allForce); System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
@@ -184,12 +189,9 @@ public class antiGrav extends AdvancedRobot {
 		 * 
 		 * } else { setTurnRightRadians(turnAngle); setAhead(2 / allForce); }
 		 */
-		
-		
-		setTurnRightRadians(turnAngle);
-		setAhead(1 / (allForce * enemyNumber));
 
-		System.out.println("all Force = " + allForce);
+		setTurnRightRadians(turnAngle);
+		setAhead(3 / (allForce * enemyNumber));
 
 	}
 
@@ -202,16 +204,17 @@ public class antiGrav extends AdvancedRobot {
 	}
 
 	class Z_GravPoint {
-		public double x, y, power, powerBefore, distance, bearingRadians;
+		double x, y, power, powerBefore, distance, bearingRadians, velocity;
 
-		public Z_GravPoint(double pX, double pY, double pPower, double pPowerBefore, double pDistance,
-				double pBearingRadians) {
+		Z_GravPoint(double pX, double pY, double pPower, double pPowerBefore, double pDistance, double pBearingRadians,
+				double pVelocity) {
 			x = pX;
 			y = pY;
 			power = pPower;
 			powerBefore = pPowerBefore;
 			distance = pDistance;
 			bearingRadians = pBearingRadians;
+			velocity = pVelocity;
 		}
 	}
 
